@@ -8,24 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
-# Colab library to upload files to notebook
-from google.colab import files
-
-# Install Kaggle library
-!pip install -q kaggle
-
-from google.colab import files
-files.upload()
-
-!ls
-
-!mkdir -p ~/.kaggle
-!cp kaggle.json ~/.kaggle/
-!chmod 600 ~/.kaggle/kaggle.json
-
-!kaggle datasets download paultimothymooney/chest-xray-pneumonia
-
-import os
 import zipfile
 for file in os.listdir():
     zip_ref = zipfile.ZipFile('chest-xray-pneumonia.zip', 'r')
@@ -91,3 +73,10 @@ train_datagen = ImageDataGenerator(
     horizontal_flip=True)
 
 test_datagen = ImageDataGenerator(rescale=1. / 255)
+
+
+train_generator = train_datagen.flow_from_directory(
+    train_data_dir,
+    target_size=(img_width, img_height),
+    batch_size=batch_size,
+    class_mode='binary')
