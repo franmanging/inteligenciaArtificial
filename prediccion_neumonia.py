@@ -10,13 +10,6 @@ from keras.optimizers import Adam
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-# %matplotlib inline
-
-import zipfile
-for file in os.listdir():
-    zip_ref = zipfile.ZipFile('chest-xray-pneumonia.zip', 'r')
-    zip_ref.extractall()
-    zip_ref.close()
 
 #Ruta del dataset
 print(os.listdir("chest_xray"))
@@ -25,18 +18,18 @@ print(os.listdir("chest_xray/train"))
 
 print(os.listdir("chest_xray/test"))
 
-#
+# Scaling para imagenes
 img_width, img_height = 150,150
 
 #Crear directorios de entrenamiento, test y validacion 
 directorio_entrenamiento = 'chest_xray/train'
-directorio_validacion = 'chest_xray/val'
+#directorio_validacion = 'chest_xray/val'
 directorio_test = 'chest_xray/test'
 
-#Cantidad de imagenes y epocas, tamano del batch
+#Cantidad de imagenes de entrenamiento, epocas, tamano del batch
 muestras_entrenamiento = 5216
 muestras_validacion = 16
-epochs = 10
+epochs = 30
 batch_size = 16
 
 if K.image_data_format() == 'channels_first':
@@ -70,27 +63,31 @@ model.compile(loss='binary_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
 
+# Augmentation de Imagenes
 reescalamiento_entrenamiento = ImageDataGenerator(
     rescale=1. / 255,
     shear_range=0.2,
     zoom_range=0.2,
+    validation_split=0.2,
     horizontal_flip=True)
 
 reescalamiento_test = ImageDataGenerator(rescale=1. / 255)
 
-
+# Configurar generadores desde directorios
 generador_entrenamiento = reescalamiento_entrenamiento.flow_from_directory(
     directorio_entrenamiento,
     target_size=(img_width, img_height),
     batch_size=batch_size,
-    class_mode='binary')
+    class_mode='binary',
+    subset='training')
 
 
 generador_validaciones = reescalamiento_test.flow_from_directory(
-    directorio_validacion,
+    directorio_entrenamiento,
     target_size=(img_width, img_height),
     batch_size=batch_size,
-    class_mode='binary')
+    class_mode='binary',
+    subset='validation')
 
 generador_tests = reescalamiento_test.flow_from_directory(
     directorio_test,
@@ -100,18 +97,15 @@ generador_tests = reescalamiento_test.flow_from_directory(
 
 resultados = model.fit(
     generador_entrenamiento,
-    steps_per_epoch=muestras_entrenamiento//muestras_validacion,
+    steps_per_epoch=generador_entrenamiento.samples//batch_size,
     epochs=epochs,
     validation_data=generador_validaciones,
-    validation_steps=muestras_validacion//batch_size)
+    validation_steps=generador_validaciones.samples//batch_size)
 
-promedio = model.evaluate(generador_validaciones,steps=1)
-print("\n%s: %.2f%%" % (model.metrics_names[0], promedio[1]*100))
-promedio = model.evaluate(generador_entrenamiento,steps=1)
-print("\n%s: %.2f%%" % (model.metrics_names, promedio[1]*100))
-promedio = model.evaluate(generador_tests,steps=1)
-print("\n%s: %.2f%%" % (model.metrics_names, promedio[1]*100))
 
+print("Evaluar con set de Test:")
+scores = model.evaluate(generador_tests,steps=generador_tests.samples//batch_size)
+print("\nTest: %s: %.2f%%, %.2f%%" % (model.metrics_names, scores[0]*100, scores[1]*100))
 
 
 # Curvas de aprendizaje
