@@ -82,14 +82,14 @@ generador_entrenamiento = reescalamiento_entrenamiento.flow_from_directory(
     subset='training')
 
 
-generador_validaciones = reescalamiento_test.flow_from_directory(
+generador_validaciones = reescalamiento_entrenamiento.flow_from_directory(
     directorio_entrenamiento,
     target_size=(img_width, img_height),
     batch_size=batch_size,
     class_mode='binary',
     subset='validation')
 
-generador_tests = reescalamiento_test.flow_from_directory(
+generador_tests = reescalamiento_entrenamiento.flow_from_directory(
     directorio_test,
     target_size=(img_width, img_height),
     batch_size=batch_size,
